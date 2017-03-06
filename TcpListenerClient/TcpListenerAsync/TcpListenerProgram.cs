@@ -130,6 +130,24 @@ namespace TcpListenerAsync
 
                 SendInfo("Server>> ", strArr[0], listClients);
             }
+            else if (strArr[1] == "DATE")
+            {
+                var dateStr = DateTime.Now.Date.ToShortDateString();
+                SendInfo("Server>> ", strArr[0], dateStr);
+            }
+            else if (strArr[1] == "TIME")
+            {
+                var dateStr = DateTime.Now.ToLongTimeString();
+                SendInfo("Server>> ", strArr[0], dateStr);
+            }
+            else if (strArr[1] == "NAME")
+            {
+                Console.Write($"Set name: ");
+                var clientName = Console.ReadLine();
+                Console.Title = clientName;
+                bufferOut = Encoding.UTF8.GetBytes("SETNAME;" + clientName);
+
+            }
             else
             {
                 Broadcast(strArr[0], strArr[1]);
@@ -162,8 +180,7 @@ namespace TcpListenerAsync
                       .BeginWrite(bufferOut, 0, bufferOut.Length, OnCompleteWriteClientCallBack, client.Key);
             }
         }
-
-        private static void SendPrivate(string sender, string receiver, string message)
+        static void SendPrivate(string sender, string receiver, string message)
         {
             var mess = sender + message;
             bufferOut = Encoding.UTF8.GetBytes(mess);
