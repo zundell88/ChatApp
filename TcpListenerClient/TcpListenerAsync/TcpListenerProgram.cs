@@ -122,6 +122,14 @@ namespace TcpListenerAsync
             {
                 SendPrivate(strArr[0], strArr[1], strArr[2]);
             }
+            else if (strArr[1] == "SHOWALL")
+            {
+                var listClients = string.Empty;
+                foreach (var client in clients)
+                    listClients += client.Value + ", ";
+
+                SendInfo("Server>> ", strArr[0], listClients);
+            }
             else
             {
                 Broadcast(strArr[0], strArr[1]);
@@ -130,11 +138,22 @@ namespace TcpListenerAsync
             str= string.Empty;
         }
 
+        private static void SendInfo(string sender, string receiver, string message)
+        {
+            var clientStr = receiver.Remove(receiver.Length - 2, 2);
+            bufferOut = Encoding.UTF8.GetBytes(sender + " " + message + "\n");
+
+            var client = (from c in clients where c.Value == clientStr select c).Single();
+            client.Key.GetStream()
+                      .BeginWrite(bufferOut, 0, bufferOut.Length, OnCompleteWriteClientCallBack, client.Key);
+
+        }
+
         private static void Broadcast(string sender, string message)
         {
             var sendingClient = sender.Remove(sender.Length - 2, 2);
             
-            bufferOut = Encoding.UTF8.GetBytes(sender + message);
+            bufferOut = Encoding.UTF8.GetBytes(sender + " " + message);
 
             foreach (KeyValuePair<TcpClient, string> client in clients)
             {
