@@ -63,18 +63,9 @@ namespace TcpListenerAsync
             try
             {
                 TcpClient client = listener.EndAcceptTcpClient(iar);
-
-                string clientName = $"Client{clients.Count}";
-                clients.Add(client, clientName);
-                clientName += "\n";
-                bufferOut = Encoding.UTF8.GetBytes(clientName);
-                client.GetStream().Write(bufferOut,0,bufferOut.Length);
-
+                
                 listener.BeginAcceptTcpClient(OnCompleteAcceptClientCallBack, listener);
                 
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"Client{clients.Count} is connected");
-                Console.ResetColor();
                 client.GetStream().BeginRead(bufferIn, 0, bufferIn.Length,
                     OnCompleteReadFromTcpClientStreamCallBack, client);
             }
@@ -95,7 +86,7 @@ namespace TcpListenerAsync
                 if (strReceived.IndexOf("\n") > -1)
                 {
                     str += strReceived.Substring(0, strReceived.IndexOf("\n") + 1);
-                    HandleReceivedMessage();
+                    HandleReceivedMessage(client);
                 }
                 else
                     str += strReceived;
@@ -106,7 +97,7 @@ namespace TcpListenerAsync
             catch
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"A client was disconnected");
+                Console.WriteLine($"{clients[client]} was disconnected");
                 client.Close();
                 clients.Remove(client);
                 Console.WriteLine($"Clients connected ({clients.Count})");
@@ -114,21 +105,29 @@ namespace TcpListenerAsync
             }
         }
 
-        private static void HandleReceivedMessage()
+        private static void HandleReceivedMessage(TcpClient client)
         {
             string[] strArr = str.Split(';');
-            
-            if (strArr[1].Contains("Client"))
+
+            if (clients.ContainsValue(strArr[1]))
             {
                 SendPrivate(strArr[0], strArr[1], strArr[2]);
+            }
+            else if (strArr[0] == "NAME")
+            {
+                var clientName = strArr[1].Remove(strArr[1].Length -1, 1);
+                clients.Add(client, clientName);
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"{clients.Last().Value} is connected");
+                Console.ResetColor();
             }
             else if (strArr[1] == "SHOWALL")
             {
                 var listClients = string.Empty;
-                foreach (var client in clients)
-                    listClients += client.Value + ", ";
+                foreach (var c in clients)
+                    listClients += c.Value + ", ";
 
-                SendInfo("Server>> ", strArr[0], listClients);
+                SendInfo("Connected Clients>> ", strArr[0], listClients);
             }
             else if (strArr[1] == "DATE")
             {
@@ -140,13 +139,16 @@ namespace TcpListenerAsync
                 var dateStr = DateTime.Now.ToLongTimeString();
                 SendInfo("Server>> ", strArr[0], dateStr);
             }
-            else if (strArr[1] == "NAME")
+            else if (strArr[1] == "SETNAME")
             {
-                Console.Write($"Set name: ");
-                var clientName = Console.ReadLine();
-                Console.Title = clientName;
-                bufferOut = Encoding.UTF8.GetBytes("SETNAME;" + clientName);
+                var oldName = strArr[0].Remove(strArr[0].Length-2, 2);
+                var newName = strArr[2].Remove(strArr[2].Length - 1, 1);
 
+                clients[client] = newName;
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"<{oldName}> changed name to <{newName}>");
+                Console.ResetColor();
             }
             else
             {
