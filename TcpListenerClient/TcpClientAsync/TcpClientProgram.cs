@@ -18,11 +18,28 @@ namespace TcpClientAsync
 
         static void Main(string[] args)
         {
+            
+
             client = new TcpClient();
             client.BeginConnect(GetMyIp(), 11000, OnCompleteConnectCallBack, client);
 
+            #region Loop for writing
             while (true)
             {
+                if (ClientName == string.Empty)
+                {
+                    do
+                    {
+                        Console.Write($"Enter your chatname: ");
+                        ClientName = Console.ReadLine();
+
+                    } while (ClientName == "");
+                    Console.Title = ClientName.ToUpper() + " - Connected";
+                    bufferOut = Encoding.UTF8.GetBytes("NAME;" + ClientName + "\n");
+                    client.GetStream().BeginWrite(bufferOut, 0, bufferOut.Length,
+                        OnCompleteWriteCallBack, client);
+                }
+
                 if (Console.ReadKey().Key == ConsoleKey.Enter)
                 {
                     Console.Write($"{ClientName}>> ");
@@ -30,10 +47,20 @@ namespace TcpClientAsync
                     var sender = $"{ClientName}>>;";
                     var eof = "\n";
                     var mess = sender + text + eof;
+                    if(text.Contains("SETNAME;"))
+                    {
+                        ClientName = text.Remove(0, 8);
+                        Console.Title = text.Remove(0, 8) + " - Connected";
+                    }
+                    else if (text.Contains("CLEAR;"))
+                        Console.Clear();
+                    else if (text.Contains("EXIT;"))
+                        break;
                     bufferOut = Encoding.UTF8.GetBytes(mess);
                     client.GetStream().BeginWrite(bufferOut, 0, bufferOut.Length, OnCompleteWriteCallBack, client);
                 }
             }
+            #endregion
         }
 
         private static void OnCompleteWriteCallBack(IAsyncResult ar)
@@ -60,6 +87,10 @@ namespace TcpClientAsync
             {
                 TcpClient tcpClient = (TcpClient) ar.AsyncState;
                 tcpClient.EndConnect(ar);
+                //bufferOut = Encoding.UTF8.GetBytes("NAME;"+ClientName);
+                //client.GetStream().BeginWrite(bufferOut,0,bufferOut.Length,
+                //    OnCompleteWriteCallBack,client);
+
                 tcpClient.GetStream().BeginRead(bufferIn, 0, bufferIn.Length,
                     OnCompleteReadCallBack, tcpClient);
             }
