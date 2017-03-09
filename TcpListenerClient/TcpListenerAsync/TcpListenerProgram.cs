@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+
 namespace TcpListenerAsync
 {
     class TcpListenerProgram
@@ -19,12 +20,20 @@ namespace TcpListenerAsync
         static byte[] bufferOut = new byte[30];
         private static string str = string.Empty;
         private static Dictionary<TcpClient, string> clients = new Dictionary<TcpClient, string>();
+        private static readonly string[] startUpInfo =
+            System.IO.File.ReadAllLines(
+                @"D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\Info\Commandos.txt");
+        private static readonly string[] shortCommands =
+           System.IO.File.ReadAllLines(
+               @"D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\Info\ShortCom.txt");
 
         static void Main(string[] args)
         {
             listener = new TcpListener(GetIpAddress(), 11000);
             listener.Start();
-            Console.WriteLine($"Server is running..");
+            PrintWithColor("Server is running..", "green");
+            PrintInfo();
+
             listener.BeginAcceptTcpClient(OnCompleteAcceptClientCallBack, listener);
             Console.Title = "Server - Running";
             
@@ -44,6 +53,33 @@ namespace TcpListenerAsync
                     }
                 }
             }
+        }
+
+        private static void PrintInfo()
+        {
+            foreach (var s in startUpInfo)
+                Console.WriteLine($"{s}");
+        }
+
+        private static void PrintWithColor(string message, string color)
+        {
+            if(color == "green")
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"{message}");
+            }
+            else if (color == "yellow")
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("message");
+            }
+            else if (color == "red")
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"{message}");
+            }
+
+            Console.ResetColor();
         }
 
         public static IPAddress GetIpAddress()
@@ -127,7 +163,7 @@ namespace TcpListenerAsync
                 foreach (var c in clients)
                     listClients += c.Value + ", ";
 
-                SendInfo("Connected Clients>> ", strArr[0], listClients);
+                SendInfo("All Clients>> ", strArr[0], listClients);
             }
             else if (strArr[1] == "DATE")
             {
@@ -136,8 +172,8 @@ namespace TcpListenerAsync
             }
             else if (strArr[1] == "TIME")
             {
-                var dateStr = DateTime.Now.ToLongTimeString();
-                SendInfo("Server>> ", strArr[0], dateStr);
+                var timeStr = DateTime.Now.ToLongTimeString();
+                SendInfo("Server>> ", strArr[0], timeStr);
             }
             else if (strArr[1] == "SETNAME")
             {
@@ -150,6 +186,14 @@ namespace TcpListenerAsync
                 Console.WriteLine($"<{oldName}> changed name to <{newName}>");
                 Console.ResetColor();
             }
+            else if (strArr[1] == "HELP")
+            {
+                var infoString = "";
+                foreach (var line in shortCommands)
+                    infoString += line;
+                
+                SendInfo("+COMMANDS:", strArr[0], infoString);
+            }
             else
             {
                 Broadcast(strArr[0], strArr[1]);
@@ -161,7 +205,7 @@ namespace TcpListenerAsync
         private static void SendInfo(string sender, string receiver, string message)
         {
             var clientStr = receiver.Remove(receiver.Length - 2, 2);
-            bufferOut = Encoding.UTF8.GetBytes(sender + " " + message + "\n");
+            bufferOut = Encoding.UTF8.GetBytes(sender + message + "\n");
 
             var client = (from c in clients where c.Value == clientStr select c).Single();
             client.Key.GetStream()

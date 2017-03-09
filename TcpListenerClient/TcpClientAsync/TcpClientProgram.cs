@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace TcpClientAsync
 {
-    class TcpClientProgram
+    public class TcpClientProgram
     {
         private static TcpClient client;
         private static byte[] bufferIn = new byte[30];
@@ -18,7 +18,6 @@ namespace TcpClientAsync
 
         static void Main(string[] args)
         {
-            
 
             client = new TcpClient();
             client.BeginConnect(GetMyIp(), 11000, OnCompleteConnectCallBack, client);
@@ -87,10 +86,7 @@ namespace TcpClientAsync
             {
                 TcpClient tcpClient = (TcpClient) ar.AsyncState;
                 tcpClient.EndConnect(ar);
-                //bufferOut = Encoding.UTF8.GetBytes("NAME;"+ClientName);
-                //client.GetStream().BeginWrite(bufferOut,0,bufferOut.Length,
-                //    OnCompleteWriteCallBack,client);
-
+                
                 tcpClient.GetStream().BeginRead(bufferIn, 0, bufferIn.Length,
                     OnCompleteReadCallBack, tcpClient);
             }
@@ -108,12 +104,22 @@ namespace TcpClientAsync
             {
                 var readBytes = tcpClient.GetStream().EndRead(ar);
                 strRec = Encoding.UTF8.GetString(bufferIn,0,readBytes);
-                if (strRec.IndexOf("\n") >= 0)
+                if (strRec.IndexOf("\n") > -1)
                 {
                     if (ClientName == "")
                     {
                         ClientName = strRec.Substring(0,strRec.IndexOf("\n"));
                         Console.Title = ClientName + " - Connected";
+                    }
+                    if (str.Contains("COMMANDS"))
+                    {
+                        str += strRec.Substring(0, strRec.IndexOf("\n") + 1);
+                        string[] infoArr = str.Split('+');
+                        
+                        foreach (var line in infoArr)
+                        {
+                            Console.WriteLine($"{line}");
+                        }
                     }
                     else
                     {

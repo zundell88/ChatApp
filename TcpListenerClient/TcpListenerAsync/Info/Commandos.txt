@@ -1,0 +1,10 @@
+﻿#Available commands#
+<Write: 'COMMAND;'>
+
++ See available command -> HELP;
++ Leave chat -> EXIT;
++ Change the chatname -> SETNAME; new name.
++ Send private message -> NameofClient; message
++ See time -> TIME;
++ See date -> DATE;
++ See all connected clients -> SHOWALL;

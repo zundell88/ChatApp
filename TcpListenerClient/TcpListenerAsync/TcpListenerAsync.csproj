@@ -49,6 +49,16 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TcpClientAsync\TcpClientAsync.csproj">
+      <Project>{5a1490db-86ff-40b1-baca-889cd4ee9aaf}</Project>
+      <Name>TcpClientAsync</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Info\Commandos.txt" />
+    <Content Include="Info\ShortCom.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
