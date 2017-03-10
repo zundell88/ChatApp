@@ -41,9 +41,9 @@ namespace TcpClientAsync
 
                 if (Console.ReadKey().Key == ConsoleKey.Enter)
                 {
-                    Console.Write($"{ClientName}>> ");
+                    Console.Write($"{ClientName}> ");
                     var text = Console.ReadLine();
-                    var sender = $"{ClientName}>>;";
+                    var sender = $"{ClientName}>;";
                     var eof = "\n";
                     var mess = sender + text + eof;
                     if(text.Contains("SETNAME;"))
@@ -123,7 +123,7 @@ namespace TcpClientAsync
                     }
                     else
                     {
-                        str += strRec.Substring(0, strRec.IndexOf("\n") + 1);
+                        str += strRec.Substring(0, strRec.IndexOf("\n"));
                         Console.WriteLine($"{str}");
                     }
                     
@@ -137,7 +137,11 @@ namespace TcpClientAsync
             }
             catch 
             {
+                Console.Clear();
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"The server was disconnected");
+                Console.ResetColor();
+                Environment.Exit(0);
             }
         }
     }

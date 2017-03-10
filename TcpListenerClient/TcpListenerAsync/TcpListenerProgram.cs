@@ -2,23 +2,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Configuration;
+using System.Net.Mime;
 using System.Net.Sockets;
-using System.Runtime.Remoting.Channels;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 
 namespace TcpListenerAsync
 {
     class TcpListenerProgram
     {
+        #region Public variables
         private static TcpListener listener;
         static byte[] bufferIn = new byte[30];
-        static byte[] bufferOut = new byte[30];
+        static byte[] bufferOut;// = new byte[30];
         private static string str = string.Empty;
+        private static int serverPort = 11000;
         private static Dictionary<TcpClient, string> clients = new Dictionary<TcpClient, string>();
         private static readonly string[] startUpInfo =
             System.IO.File.ReadAllLines(
@@ -26,12 +24,15 @@ namespace TcpListenerAsync
         private static readonly string[] shortCommands =
            System.IO.File.ReadAllLines(
                @"D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\Info\ShortCom.txt");
-
+        private static readonly string historyPath =
+            @"D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\History\HistoryFile.txt";
+        #endregion
         static void Main(string[] args)
         {
-            listener = new TcpListener(GetIpAddress(), 11000);
+            listener = new TcpListener(GetIpAddress(), serverPort);
             listener.Start();
-            PrintWithColor("Server is running..", "green");
+            PrintWithColor("SERVER IS RUNNING..", "green");
+            Console.WriteLine($"<<ServerIP: {GetIpAddress()} | ServerPort: {serverPort}>>");
             PrintInfo();
 
             listener.BeginAcceptTcpClient(OnCompleteAcceptClientCallBack, listener);
@@ -41,20 +42,26 @@ namespace TcpListenerAsync
             {
                 if (Console.ReadKey().Key == ConsoleKey.Enter)
                 {
-                    Console.Write($"Server>> ");
+                    Console.Write($"Server> ");
                     var str = Console.ReadLine();
-                    str += "\n";
-                    var mess = $"Server>> {str}";
-                    bufferOut = Encoding.UTF8.GetBytes(mess);
+                    if (str =="EXIT")
+                    {
+                        Environment.Exit(0);
+                    }
+                    if (str == "CLEARHISTORY")
+                    {
+                        System.IO.File.WriteAllText(historyPath, string.Empty);
+                    }
+                    
+                    bufferOut = Encoding.UTF8.GetBytes("Server> " + str + "\n");
                     foreach (var client in clients)
                     {
                         client.Key.GetStream()
-                            .BeginWrite(bufferOut, 0, bufferOut.Length, OnCompleteWriteClientCallBack, client);
+                            .BeginWrite(bufferOut, 0, bufferOut.Length, OnCompleteWriteClientCallBack, client.Key);
                     }
                 }
             }
         }
-
         private static void PrintInfo()
         {
             foreach (var s in startUpInfo)
@@ -143,6 +150,15 @@ namespace TcpListenerAsync
 
         private static void HandleReceivedMessage(TcpClient client)
         {
+            var historyString = str.Remove(str.Length - 1, 1);
+            if (!historyString.Contains("NAME"))
+            {
+                historyString = historyString.Replace(';', ' ');
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(historyPath, true))
+                {
+                    file.WriteLine($"{historyString} <{DateTime.Now.Date.ToShortDateString()} | {DateTime.Now:hh:mm:ss}>");
+                }
+            }
             string[] strArr = str.Split(';');
 
             if (clients.ContainsValue(strArr[1]))
@@ -163,17 +179,17 @@ namespace TcpListenerAsync
                 foreach (var c in clients)
                     listClients += c.Value + ", ";
 
-                SendInfo("All Clients>> ", strArr[0], listClients);
+                SendInfo("All Clients> ", strArr[0], listClients);
             }
             else if (strArr[1] == "DATE")
             {
                 var dateStr = DateTime.Now.Date.ToShortDateString();
-                SendInfo("Server>> ", strArr[0], dateStr);
+                SendInfo("Server> ", strArr[0], dateStr);
             }
             else if (strArr[1] == "TIME")
             {
                 var timeStr = DateTime.Now.ToLongTimeString();
-                SendInfo("Server>> ", strArr[0], timeStr);
+                SendInfo("Server> ", strArr[0], timeStr);
             }
             else if (strArr[1] == "SETNAME")
             {
@@ -204,21 +220,18 @@ namespace TcpListenerAsync
 
         private static void SendInfo(string sender, string receiver, string message)
         {
-            var clientStr = receiver.Remove(receiver.Length - 2, 2);
+            var clientStr = receiver.Remove(receiver.Length - 1, 1);
             bufferOut = Encoding.UTF8.GetBytes(sender + message + "\n");
 
             var client = (from c in clients where c.Value == clientStr select c).Single();
             client.Key.GetStream()
                       .BeginWrite(bufferOut, 0, bufferOut.Length, OnCompleteWriteClientCallBack, client.Key);
-
         }
 
         private static void Broadcast(string sender, string message)
         {
-            var sendingClient = sender.Remove(sender.Length - 2, 2);
-            
+            var sendingClient = sender.Remove(sender.Length - 1, 1);
             bufferOut = Encoding.UTF8.GetBytes(sender + " " + message);
-
             foreach (KeyValuePair<TcpClient, string> client in clients)
             {
                 if(client.Value != sendingClient)
@@ -235,7 +248,6 @@ namespace TcpListenerAsync
             client.Key.GetStream()
                       .BeginWrite(bufferOut, 0, bufferOut.Length, OnCompleteWriteClientCallBack, client.Key);
         }
-
         static void OnCompleteWriteClientCallBack(IAsyncResult iar)
         {
             var client = (TcpClient) iar.AsyncState;

@@ -12,3 +12,4 @@ D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\bin\Debug\TcpL
 D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\obj\Debug\TcpListenerAsync.csprojResolveAssemblyReference.cache
 D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\bin\Debug\TcpClientAsync.exe
 D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\bin\Debug\TcpClientAsync.pdb
+D:\Skolgrejer\Nätprog\ChatApp\TcpListenerClient\TcpListenerAsync\bin\Debug\TcpClientAsync.exe.config
